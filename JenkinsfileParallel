@@ -26,9 +26,9 @@ def generateJobs(components){
         componentJobs[component.name] = {
             //place each in their own workspace to avoid shared file conflicts
             def mainWorkspace = WORKSPACE
-            def componentWorkspace = "${WORKSPACE}/.component-stages/${component.name}"
+            def componentWorkspace = "${WORKSPACE}/.component-stages/${component}"
             ws(componentWorkspace) {
-                stage("Build ${component.name}") {
+                stage("Build ${component}") {
                     agent {
                         docker {
                             image 'hello-world'
@@ -36,7 +36,7 @@ def generateJobs(components){
                             // args
                         }
                     }
-                    sh "echo hello ${component.name}"
+                    sh "echo hello ${component}"
                 }
             }
         }
