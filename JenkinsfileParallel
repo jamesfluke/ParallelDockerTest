@@ -15,7 +15,7 @@ pipeline{
 }
 
 def getComponent(){
-    def components = ['awesomeComponent', 'coolComponent']
+    def components = ['componentA', 'componentB']
     return components
 }
 
@@ -37,6 +37,7 @@ def generateJobs(components){
                         }
                     }
                     sh "echo hello ${component}"
+                    sleep 60
                 }
             }
         }
