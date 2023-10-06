@@ -15,13 +15,7 @@ pipeline{
 }
 
 def getComponent(){
-    def components = '''
-{
-    "name": "Dinosaur",
-    "key2": "value2",
-    "key3": "value3"
-}
-'''
+    def components = ['awesomeComponent', 'coolComponent']
     return components
 }
 
