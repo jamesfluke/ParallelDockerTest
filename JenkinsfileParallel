@@ -1,5 +1,9 @@
 pipeline{
-    agent {label "ubuntu"}
+    agent {
+        docker {
+            image alpine
+        }
+    }
     stages{
         stage("Build components"){
             
