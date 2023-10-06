@@ -1,16 +1,14 @@
 
 node {
-    stages{
-        stage('Build components') {
-            steps {
-                script {
-                    def components = [
-                        ["name": "firstcomponent"],
-                        ["name": "secondcomponent"],
-                    ]
-                    def componentJobs = generateJobs(components)
-                    parallel componentJobs
-                }
+    stage('Build components') {
+        steps {
+            script {
+                def components = [
+                    ["name": "firstcomponent"],
+                    ["name": "secondcomponent"],
+                ]
+                def componentJobs = generateJobs(components)
+                parallel componentJobs
             }
         }
     }
