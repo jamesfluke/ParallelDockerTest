@@ -1,0 +1,15 @@
+pipeline{
+    agent (label "ubuntu")
+    stages{
+        stage("run parallel"){
+            steps{
+                parallel(
+                    echo "branch 1"
+                )
+                parallel(
+                    echo "branch 2"
+                )
+            }
+        }
+    }
+}

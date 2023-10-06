@@ -32,6 +32,7 @@ def generateJobs(components){
                             // args
                         }
                     }
+                    sh "echo hello ${component.name}"
                 }
             }
         }
