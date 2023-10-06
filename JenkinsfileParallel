@@ -41,7 +41,7 @@ def generateJobs(components){
                         }
                     }
                     sh "echo hello ${component}"
-                    sleep 60
+                    sleep 600
                 }
             }
         }
