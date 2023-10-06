@@ -14,7 +14,7 @@ pipeline{
     }
 }
 
-def getComponent{
+def getComponent(){
     def components = '''
 {
     "name": "Dinosaur",
