@@ -23,7 +23,7 @@ def generateJobs(components){
     def componentJobs = [:]
     components.each { component ->
 
-        componentJobs[component.name] = {
+        componentJobs[component] = {
             //place each in their own workspace to avoid shared file conflicts
             def mainWorkspace = WORKSPACE
             def componentWorkspace = "${WORKSPACE}/.component-stages/${component}"
