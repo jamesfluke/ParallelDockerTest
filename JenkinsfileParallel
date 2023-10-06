@@ -1,17 +1,45 @@
 pipeline{
     agent {label "ubuntu"}
     stages{
-        stage("run parallel"){
+        stage("Build components"){
+            def components = '''
+{
+    "name": "Dinosaur",
+    "key2": "value2",
+    "key3": "value3"
+}
+'''
             steps{
-                parallel(
-                    a: {
-                        echo "branch 1"
-                    },
-                    b: {
-                        echo "branch 2"
-                    }
-                )
+                script {
+                    def componentJobs = generateJobs(components)
+                    parallel componentJobs
+                }
             }
         }
     }
+}
+
+def generateJobs(components){
+    def componentJobs = [:]
+    components.each { component ->
+
+        componentJobs[component.name] = {
+            //place each in their own workspace to avoid shared file conflicts
+            def mainWorkspace = WORKSPACE
+            def componentWorkspace = "${WORKSPACE}/.component-stages/${component.name}"
+            ws(componentWorkspace) {
+                stage("Build ${component.name}") {
+                    agent {
+                        docker {
+                            image 'hello-world'
+                            // label ''
+                            // args
+                        }
+                    }
+                    sh "echo hello ${component.name}"
+                }
+            }
+        }
+    }
+    return componentJobs
 }

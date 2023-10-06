@@ -1,0 +1,109 @@
+def components = [:]
+pipeline {
+    
+    agent {
+        docker {
+            alwaysPull true // dont keep this; just for testing
+            image 'us-west1-docker.pkg.dev/petm-prj-npplatform-np-w9ks/petm-infr-dotnet-np-rep-usw1/build-dotnet7:1.0-fedora'
+            label 'pho-cbbld-q01'
+            args '--privileged'
+        }
+    }
+    environment {
+        GOOGLE_APPLICATION_CREDENTIALS=credentials('gcp-jenkins-automation-service-account-nonprod')
+        AZURE_ARTIFACTS_TOKEN = credentials('azure-artifacts-access-token')
+        CI_GHE = credentials('svc-githubjira')
+        CI_RT = credentials('artifactory-kmackow-apikey')
+        CI_SONARQUBE_PSW = credentials('sonarqube-ssg-petsmart-com')
+        DOCKER_REGISTRY_HOST_GCP_NONPROD='us-west1-docker.pkg.dev'
+        DOCKER_REGISTRY_PROJECT_GCP_NONPROD='petm-prj-npplatform-np-w9ks'
+        DOCKER_REGISTRY_REPOSITORY_GCP_NONPROD='petm-infr-dotnet-np-rep-usw1'
+        SOURCE_NUGET='https://pkgs.dev.azure.com/PetSmartIntegrations/_packaging/dotnet/nuget/v3/index.json'
+        DOCKER_REGISTRY_GCP_NONPROD="$DOCKER_REGISTRY_HOST_GCP_NONPROD/$DOCKER_REGISTRY_PROJECT_GCP_NONPROD/$DOCKER_REGISTRY_REPOSITORY_GCP_NONPROD"
+        MSBUILDDISABLENODEREUSE = '1'
+        RECIPE_DEBUG_MODE="true"
+    }
+    options {
+        ansiColor('xterm')
+    }
+    
+    stages {
+        stage('Initialize Workspace') {
+            steps {
+                script {
+                    sh 'git clean -dxf'
+                    sh 'printenv | sort'
+                    sh(label: 'Log into gcloud sdk',
+                       script: """
+                            gcloud auth activate-service-account \
+                                --key-file ${GOOGLE_APPLICATION_CREDENTIALS}
+                         """
+                    )
+                    sh(label: "Set Azure Artifacts Creds",
+                       script: """
+                            export VSS_NUGET_EXTERNAL_FEED_ENDPOINTS="{\\"endpointCredentials\\": [{\\"endpoint\\":\\"${SOURCE_NUGET}\\", \\"username\\":\\"azure\\", \\"password\\":\\"${AZURE_ARTIFACTS_TOKEN}\\"}]}"
+                       """
+                    )
+                    sh(label: "Configure docker credentials for '${DOCKER_REGISTRY_HOST_GCP_NONPROD}'",
+                       script: "gcloud auth configure-docker ${DOCKER_REGISTRY_HOST_GCP_NONPROD} --project ${DOCKER_REGISTRY_PROJECT_GCP_NONPROD}"
+                    )
+                    sh(label: 'Install Foreman CLI',
+                       script: """
+                       python -m pipx install git+https://${CI_GHE_PSW}@github.ssg.petsmart.com/Development/devops-tools-foreman2@master#subdirectory=foreman_cli --force
+                       """
+                    )
+                    def componentsOutput = sh(script: 'foreman curator component-summary', returnStdout: true).trim()
+                    echo "Component Summary: ${componentsOutput}"
+                    components = readJSON text: componentsOutput
+                }
+            }
+        }
+        stage('Build Components') {
+            steps {
+                script {
+                    def componentJobs = generateJobs(components)
+                    parallel componentJobs
+                }
+            }
+        }
+    }
+}
+// run one for each discovered component
+def generateJobs(components) {
+    def componentJobs = [:]
+    components.each { component ->
+        componentJobs[component.name] = {
+            // place each in their own workspace to avoid shared file conflicts
+            def mainWorkspace = WORKSPACE
+            def componentWorkspace = "${WORKSPACE}/.component-stages/${component.name}"
+            ws(componentWorkspace) {
+                stage("Build ${component.name}") {
+                    agent {
+                        docker {
+                            image 'us-west1-docker.pkg.dev/petm-prj-npplatform-np-w9ks/petm-infr-dotnet-np-rep-usw1/build-dotnet7:1.0-fedora'
+                            label 'pho-cbbld-q01'
+                            args '--privileged'
+                        }
+                    }
+                    sh (
+                        label: 'Copy to component workspace',
+                        script: "cp -r ${mainWorkspace}/* ./ || true"
+                    )
+                    sh(
+                        label: "Run Recipe",
+                        script: """
+                            foreman recipes run-for \
+                                --dir ${componentWorkspace} \
+                                --component-name ${component.name}
+                        """
+                    )
+                    if(env.CHANGE_ID == null) { // only skip on PRs
+                        //build job: 'some-deploy-job', parameters: [string(name: 'FOO', value: '123')], wait: false
+                        echo "kicking default deployment"
+                    }
+                }
+            }
+        }
+    }
+    return componentJobs
+}

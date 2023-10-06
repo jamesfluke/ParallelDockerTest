@@ -37,4 +37,5 @@ def generateJobs(components){
             }
         }
     }
+    return componentJobs
 }
