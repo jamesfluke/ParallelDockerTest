@@ -1,13 +1,12 @@
 
 pipeline {
-    agent any
+    agent {label 'ubuntu'}
     stages{
         stage('Build components') {
             steps {
                 script {
                     def components = [
                         [name: "firstcomponent"],
-                        [name: "secondcomponent"],
                     ]
                     def componentJobs = generateJobs(components)
                     parallel componentJobs
