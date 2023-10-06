@@ -5,7 +5,7 @@ pipeline{
             
             steps{
                 script {
-                    components = getComponent
+                    components = getComponent()
                     def componentJobs = generateJobs(components)
                     parallel componentJobs
                 }
