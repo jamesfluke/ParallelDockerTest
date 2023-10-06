@@ -4,10 +4,12 @@ pipeline{
         stage("run parallel"){
             steps{
                 parallel(
-                    echo "branch 1"
-                )
-                parallel(
-                    echo "branch 2"
+                    a: {
+                        echo "branch 1"
+                    },
+                    b: {
+                        echo "branch 2"
+                    }
                 )
             }
         }
