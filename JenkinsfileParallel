@@ -2,21 +2,27 @@ pipeline{
     agent {label "ubuntu"}
     stages{
         stage("Build components"){
-            def components = '''
-{
-    "name": "Dinosaur",
-    "key2": "value2",
-    "key3": "value3"
-}
-'''
+            
             steps{
                 script {
+                    components = getComponent
                     def componentJobs = generateJobs(components)
                     parallel componentJobs
                 }
             }
         }
     }
+}
+
+def getComponent{
+    def components = '''
+{
+    "name": "Dinosaur",
+    "key2": "value2",
+    "key3": "value3"
+}
+'''
+    return components
 }
 
 def generateJobs(components){
