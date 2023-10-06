@@ -5,9 +5,6 @@ pipeline {
         stage('Build components') {
             steps {
                 script {
-                    def components = [
-                        name: "firstcomponent"
-                    ]
                     def componentJobs = generateJobs(components)
                     parallel componentJobs
                 }
