@@ -1,6 +1,5 @@
 
-
-pipeline{
+node {
     stages{
         stage('Build components') {
             steps {
